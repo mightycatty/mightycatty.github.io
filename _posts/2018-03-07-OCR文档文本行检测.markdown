@@ -4,7 +4,7 @@ title:      "OCR文档文本行检测"
 subtitle:   " \"曲面变形的OCR文档文本行检测\""
 date:       2018-03-07 21:17:00
 author:     "HeShuai"
-header-img: "img/banner/textline_detection.png"
+header-img: "img/banner/post-default.jpg"
 catalog: true
 tags:
     - 图像处理
