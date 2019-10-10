@@ -2,9 +2,9 @@
 layout:     post
 title:      "OCR文档二值化算法"
 subtitle:   " \"手持设备拍照源的OCR文档二值化处理\""
-date:       2018-01-02 16:07:00
+date:       2018-01-02 22:02:00
 author:     "HeShuai"
-header-img: "img/banner/telegram_bot.png"
+header-img: "img/banner/ocr_binary.png"
 catalog: true
 tags:
     - 图像处理
