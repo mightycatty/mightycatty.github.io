@@ -162,10 +162,17 @@ $$
 #### Referecne
 
 [1] https://blog. csdn.net/zouxy09/article/details/8532111
+
 [2] https://zhuanlan.zhihu.com/p/22464581
+
 [3] Efficient Inference in Fully Connected CRFs with Gaussian Edge Potentials
+
 [4] https://arxiv.org/pdf/1805.04777.pdf
+
 [5] https://blog.csdn.net/v_JULY_v/article/details/40738211
+
 [6] https://medium.com/@nikasa1889/a-guide-to-receptive-field-arithmetic-for-convolutional-neural-networks-e0f514068807
+
 [7] http://blog.qure.ai/notes/semantic-segmentation-deep-learning-review
+
 [8] http://host.robots.ox.ac.uk:8080/leaderboard/displaylb.php?challengeid=11&compid=6
