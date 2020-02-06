@@ -9,6 +9,17 @@ catalog: true
 tags:
     - 深度学习
 ---
+<head>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            inlineMath: [['$','$']]
+            }
+        });
+    </script>
+</head>
 
 # Tensorflow下的数据流及其优化
 
@@ -19,7 +30,10 @@ tags:
 > 2. 当数据体积较大并设计比较耗时的解析操作时（如大分辨率的图片读取），分割成多个小records，可以进行IO并行读取和处理。
 > 3. 采用pipeline形式，并行化CPU上的数据流准备与GPU训练过程，最大化降低GPU的idle时间。
 > 4. 多线程并行化CPU上的数据流相关工作，充分利用CPU的多核心资源。
+
+
 ### 1. 介绍
+
 在简单的深度学习工程中，数据与模型是基础单元。数据作为模型的输入。一般数据相关的包括IO读取与预处理，多在CPU上运行。模型训练则包括正向推理和反向梯度，在GPU上进行加速。
 当数据准备与模型训练串行进行时（如下图），一次迭代时间为：
 $$
@@ -83,17 +97,13 @@ Tensorflow下的数据流程大致可以如图分为三个阶段：
 #### 2. 2 数据流程的并行化
 
 如前所述，并行化是指两方面的并行化：CPU数据准备和GPU训练的并行化；CPU数据准备的多核多线程并行化。
-
 ![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20191114132559.png)
-
 **CPU和GPU的并行化：**
-
 > CPU和GPU的并行化是指数据准备和模型训练的并行化。CPU在GPU进行计算时就进行数据准备，等GPU结束立马送过去，减少GPU的idle时间。
 >
 > tf中的并行化通过tf.dataset.prefetch()实现
 
 **数据加载与预处理的并行化：**
-
 >数据在输送GPU之前会进行IO读取和预处理。其中数据增强会在线进行且很耗时，为了加快这部分的运算，tf data拉起多个线程进行IO读取和并行数据处理。tf.dataset很多api接口都会提供map_cores参数，代表并行的线程数和利用的核心数。一般来说尽可能利用所有的可能CPU核心。
 
 #### 2.3 Sample Code
