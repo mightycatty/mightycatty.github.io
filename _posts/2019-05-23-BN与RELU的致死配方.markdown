@@ -51,13 +51,19 @@ $$\gamma$$：缩放因子，可学习变量，缩放正态归一后的输出
 $$\beta$$：偏置量，科学系变量，缩放正太归一化输出的偏置。以上四个参数在推理阶段均为常量。
 
 **ReLU的数学过程：**
+
+
 $$
 y=f(x)=\begin{cases}
 x&,x\geq0 \\ 
 0&,x<0
 \end{cases}
 $$
+
+
 那么BN-ReLU block的输出即为两者的嵌套:
+
+
 $$
 y = f_{relu}(f_{bn}(x)) = f_{relu}(\gamma \hat{x_{i}} + \beta)
 $$
@@ -80,9 +86,13 @@ $$
 **问题所在**
 
 如前所述，BN存在两个可学习参数$$\gamma$$和$$\beta$$。两个可学习参数的意义在于线性缩放BN归一化的结果。然而，当$$\gamma$$趋向于0而$$\beta<0$$时，有：
+
+
 $$
 y_{bn} = \gamma \hat{x_i} + \beta \approx 0* \hat{x_i} + \beta = \beta< 0
 $$
+
+
 此时BN的输出就已经是一个小于0的定值，与输入无关了。再经过ReLU，得到的特征全部置零。结果就是上面shortcut过来的信息被BN-ReLU完全拦截掉。此时查一下BN的两个值，基本上$$\gamma <10^{-30}$$, 而$$\beta \approx -1.x$$。
 
 **个人理解**
@@ -98,18 +108,26 @@ $$
 ![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images20200213014634.png)
 
 上图为一个分割模型mobilenetv2 backbone中expanded_conv5_expand_relu的输出，可见有相当一部分比例的特征通道输出是空的，即ReLU在该维度进入了死区（虽然不至于像上面shortcut那样通通死掉）。随便找一个维度，查看其前面BN的参数：
+
+
 $$
 \gamma = 1.5588417053222656\\
 \beta = -1.3605622053146362 \\
  \mu = 1.0585836836320366e^{-37}\\
  \sigma = 1.0648686754003491e^{-37}
 $$
+
+
 可见BN的两个学习参数看起来挺正常的，但是滑动均值和滑动方差异常的小。几乎为0的均值和方差说明BN在该维度的输入是一个脉冲信号，就是0。此时，$x_i \approx0$，有：
+
+
 $$
 y_{i} = \gamma \hat{x_i} + \beta = \gamma* \frac{x_i - \mu}{\sqrt{\sigma^2+\varepsilon}} +\beta\\ 
 \approx \gamma* \frac{0}{\sqrt{\sigma^2+\varepsilon}} +\beta\\ 
 = \beta < 0
 $$
+
+
 再经过ReLU，嚄嚯！来跟死区say hi。
 
 **个人理解**
@@ -121,19 +139,27 @@ $$
 从前两个小标的内容就可以判断出BN的四个参数跟死区问题息息相关，或者互为体现。因此，可以通过BN参数快速判断出存在BN-ReLU模块的神经网络中是否存在死区现象，在训练初期就将其扼杀在摇篮里。
 
 当出现主动BN信息拒绝时，BN参数的模式：
+
+
 $$
 \gamma < 10^{-30}\\
 \beta <0 \\
  \mu ：无\\
  \sigma ：无
 $$
+
+
 当出现一般死区问题，BN参数的模式：
+
+
 $$
 \gamma ：无\\
 \beta <0 \\
  \mu <10^{-30}\\
  \sigma <10^{-30}
 $$
+
+
 简化来说，只要BN出现了极度异常小的值（事实上神经网络上任何如此极端的值都值得注意），那恭喜你喜提死区:boom:。
 
 死区的出现务必在训练初期就检测出来，否则后训练阶段已经无力回天了。这里提供一个tf.keras.callback，实时监控每个epoch的参数异常情况。参数异常的定义为参数极端大或者极端小，不仅仅局限于本文提到的BN结构。
