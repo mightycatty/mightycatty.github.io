@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      "BN与ReLU的致死配方"
-subtitle:   " \"BN与ReLU搭配使用时会出现死区现象，BN参数可以透露这种现象的存在，而无需统计或者可视化ReLU输出\""
+subtitle:   " \"BN与ReLU搭配使用时会出现死区现象，BN参数可以透露这种现象的存在\""
 date:       2019-05-23 01:57:00
 author:     "HeShuai"
 header-img: "img/banner/post-default.jpg"
