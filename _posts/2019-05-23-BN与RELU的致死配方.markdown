@@ -1,14 +1,14 @@
 ---
 layout:     post
 title:      "BN与ReLU的致死配方"
-subtitle:   " \"BN与ReLU搭配使用时会出现死区现象\""
-date:       2019-05-23 01:57:00
+subtitle:   " \"BN与ReLU搭配出现的死区现象\""
+date:       2019-05-23 22:02:00
 author:     "HeShuai"
 header-img: "img/banner/post-default.jpg"
 catalog: true
 tags:
     - 深度学习
-	- 分割
+    - 图像分割
 ---
 <head>
     <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
