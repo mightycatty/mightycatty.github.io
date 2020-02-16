@@ -22,7 +22,9 @@ tags:
 上述诉求可以通过简单的分流代理实现（我知道很多人还在混淆VPN和代理的区别）。代理需要一台代理服务器，而如果要访问公司内网资源，我就需要有一台在办公网下的服务器。公司我只有一台工作电脑，因此只能以它作为服务器。但是，由于办公电脑处于公司内网之下，没有公网IP可以进行直接通讯，因此内网穿透是首要之需。总而言之，我的关键需求变成了：
 
 > **1.** 帮助没有办公局域网防火墙之下的办公电脑进行**内网穿透**。
+>
 > **2.** 办公网中的**代理服务器**。
+>
 > **3.** **分流代理客户端**。
 
 理论上内网穿透和代理需要分别搭建两个服务器，好消息是著名的FRP内网穿透刚好支持代理，因此一个FRP服务器就可以同时满足穿透和代理的功能；而客户端的代理流量分流现成工具更多，客户端有proxifier, chrome插件则有switchy omega。总结，我的**解决方案**是这样的：
@@ -123,8 +125,11 @@ use_encryption = true
 switch omega主要是负责代理分流，根据你设置的规则，不同的流量走不同的代理或者渠道。这里可以实现海外站点走你的小鸡、OA走上面设置的frp socket5或者http代理、国内站点直连。因此你真正走公司的流量只有办公那部分流量，不怕被网管log你私人流量。
 
 1) google chrome play搜索switch omega
+
 2) 新建一个代理情景模式，配置为你上面配置的frp socket5代理
+
 ![](https://raw.githubusercontent.com/mightycatty/mightycatty.github.io/master/img/20190730002722.png)
+
 3) 新建一个auto switch，配置你的规则，让相关流量走其该走的路
 ![](https://raw.githubusercontent.com/mightycatty/mightycatty.github.io/master/img/20190730003014.png)
 
