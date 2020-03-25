@@ -1,0 +1,131 @@
+---
+layout:     post
+title:      "OCR文档文本行检测"
+subtitle:   " \"曲面变形的OCR文档文本行检测\""
+date:       2018-03-07 21:17:00
+author:     "HeShuai"
+header-img: "img/banner/post-default.jpg"
+catalog: true
+tags:
+    - 图像处理
+    - OCR
+---
+<head>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            inlineMath: [['$','$']]
+            }
+        });
+    </script>
+</head>
+
+# 文本图像textlines检测
+
+##### 0. Abstract       
+
+ 对文本进行倾斜校正或者曲面校正，常基于理论文本行平行且为直线的特征，所以往往校正的前提为提取文本行。textlines有三条，分别为中心线和上下baselines。文本行提取算法可分为两个步骤：滤波与文本行检测或者回归。滤波的作用是模糊文字局部特征，只保留文本行粗略的行信息。滤波需采用各向异性滤波，以保留文本行的走向特征且各行之间不糅合。下一步骤则为文本提取算法，可分为三大类：直线检测类、多项式回归类和梯度类。直线检测假设所有文本行重心存在一条潜在直线，在英文中效果较好，但是中文中由于汉字构造，文字重心常常偏下，导致检测的文本行有一定角度偏差。直线检测最大的弊端在于无法检测具有一定曲率的文本行；多项式回归利用多项式对文本行进行逼近，理论上可以无限逼近实际文本行，但是由于精度和计算量的考虑，常常取最高次为2或者3次；前面两种算法用于提取中心textline，梯度类则利用sobel算子，得到文本行的上下baselines。
+
+##### 1. Introduction
+
+文本行提取算法的稳定性一定程度上决定了后续的校正精度。在实际中，由于倾斜或者拍摄变形问题，实际文本行并非为直线或者文本行之间不平行。因此，testbaselines算法需要考虑这些变形，且准确找出潜在文本行。textlines包括中心线和上下两根baselines。在多分辨率处理技术上，文本行为像素精度要求低的图像特征，无需保留文字的具体像素，因为检测见需要通过下采样或者滤波模糊的形式，得到低分辨率图像，在此图像上进行文本行检测。处理手段常用各向异性滤波器，如各向异性高斯滤波性，保留模糊之后文本行的方向特征；检测算法则常为直线检测或者多项式回归。直线检测假设文本图像无曲面扭曲，因此只能检测平面图像。多项式回归利用二次或者三次多项式，对文本行进行回归，可检测具有一定曲率的文本行。
+
+##### 2. 滤波
+
+理想文本图像中，文本行应为直线，且文本行之间为平行关系。滤波的作用则为提取文本行的这些信息，为下一步文本行检测提供低分辨率图像。滤波一般不能采用各向同性滤波。各向同性滤波在各方向上的滤波权值一致，对文本图像进行处理，容易导致文本行发散，后者文本行之间糅合。各向异性则避免了这种问题。      
+各向异性滤波是将图像看成物理学的力场或者热流场，图像像素总是向跟他的值相异不是很大的地方流动或者运动，这样那些差异大的地方(边缘)就得以保留，所以本质上各向异性滤波是图像边缘保留滤波器(EPF)。通过对各向异性滤波器算子的设计后者角度选择，能特异性的保留特定方向的特征。如在文本行中，可在[-20, 20]区间内等距选择。常用滤波器有各向异性高斯滤波器和线性滤波器。
+###### 2.1  滤波集合（filter bank）
+由于特定的各向异性滤波只能最大程度保留同方向的文字特征，但是在变形文本中，文本行存在多角度，如在[-20, 20]之间分布，因此滤波结果需要保留在此区间内的所有方向特征。为实现该需求，采取滤波集合的形式，一个滤波集合内存在一批量角度各异的滤波核。在滤波过程中，在同一张图像上，分别用各个滤波核进行滤波，然后取所有滤波核在某点的最大值作为输出图像对应位置的最终像素值。    
+
+算法流程为：   
+
+>1）. 准备各方向不同的各向异性滤波器集合，选取区间和步长，如[-20, 20]，step=1，则集合中有40个滤波核，滤波的角度精度为1度；
+>2）. 对图像进行滤波；
+>3）. 在图像中每个像素位置，取2所有滤波结果中值最大的。
+
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/%E5%90%84%E5%90%91%E5%BC%82%E6%80%A7%E6%BB%A4%E6%B3%A2_0.png)
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/%E5%90%84%E5%90%91%E5%BC%82%E6%80%A7%E6%BB%A4%E6%B3%A2_2.png)
+
+<center>
+    F_0:各向异性滤波过程
+</center>
+
+###### 2.2 各向异性高斯滤波
+
+一般所用的高斯滤波函数与各向同性，在算子角度看，其各方向上的加权因子相同。各向异性的高斯函数具有方向性，不同方向的加权因子不同，因此可以保留特定方向的特征或者边缘。[1]
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/%E5%90%84%E5%BC%82%E9%AB%98%E6%96%AF_0.jpg)
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/%E5%90%84%E5%BC%82%E9%AB%98%E6%96%AF_1.png)
+
+<center>
+F_1: 各向同性三维高斯核（左）， 不同方向的各向异性三维高斯核的二维投影（右）
+</center>
+从下面滤波结果可见，各向同性高斯滤波后文字行的方向性特征保留交叉，所行直线出现了糅合；各向异性的高斯滤波结果则保留了较为明显的文字行方向信息，各文字行之间仍存在空隙。
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/filter_0.png)
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/filter_1.png)
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/filter_2.png)
+
+<center>
+    F_2：原图（左），各向同性高斯滤波结果（中）， 各向异性高斯滤波结果（右）
+    各向异性高斯滤波集合算法有两大缺点：计算量相对较大、对相邻文字行仍有一定糅杂。计算量的大小主要取决于滤波集合的大小。
+</center>
+###### 2.3 线性滤波
+针对各向异性高斯滤波的弊端，[1]文献提出一种线性滤波集合。滤波算子为一条长度和倾斜角度自定的直线。在集合中，取不同角度线性核，可以获得与高斯滤波相似的效果，且文本行之间糅杂度更低。缺点仅在一条直线上做加权，容易受极值的影响，且滤波结果中，文字行中心没有形成脊结构。
+
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/%E7%BA%BF%E6%80%A7%E6%BB%A4%E6%B3%A2_0.png)
+
+<center>
+F_3: 线性滤波集合与其滤波示范结果
+</center>
+
+为了使线性集合滤波结果更平滑，在滤波完成后，再经过一个各向同性的高斯滤波。
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/%E7%BA%BF%E6%80%A7_1.png)
+<center>
+F_4: 线性集合滤波过程（后面跟一次各向同性高斯滤波）
+</center>
+
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/textline_result_0.png)
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/textline_result_1.png)
+<center>
+F_5: 线性集合滤波结果
+</center>
+##### 3. 文本行检测
+
+文本行检测包括三条线的检测：中心文本线，上底线和下底线。三根线都利用多项式进行逼近。
+中心检测之前，需要将所有的文字行分割开，利用连通域分析可快速得到每个文字行的坐标。在得到的文字行中，可以采取一定措施去除潜在的非文字行，如利用连通域长宽信息。
+回归的作用是得到平滑的曲线。
+
+###### 3.1 中心行检测
+针对滤波结果和文字行分割结果，对每一行进行中心行检测。中心行检测可采取多种方法，如：
+
+>1. 取连通域y方向的中心坐标，对此中心坐标进行二项式逼近，得到平滑的中心曲线
+>2. 直接对连通域所有的点进行最小二乘法多项式逼近，得到平滑的中心曲线。
+>3. 对文字行进行脊提取（该方法要求滤波结果中每行中心都是脊结构，实际应用中难以得到）
+
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20190923195946.png)
+<center>
+F_6: 利用方法2的中心线检测结果，最高次=3
+</center>
+###### 3.2 上下baselines检测
+上下baselines检测比较简单，利用上述步骤得到的滤波和文本行分割结果，进行sobel算子运算。由于在文本行的上方，图像从无到有，因此sobel运算后梯度为正，相反，下方梯度为负。
+主要算法步骤：
+
+>1. 对滤波结果进行sobel算子运算
+>2. 分类1结果中的正负像素，得到两幅与原图同大的图像；对负像素图求绝对值。将两幅图二值化为0/1
+>3. 针对2结果中的两幅mask图像，一副为上baselines mask，一副为下baselines mask。分别去除小与一定阈值小物体
+>4. 分别对3所得结果，结合文本行分割结果，对每一行进行最小二乘回归逼近，得到平滑的baselines
+
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/baselines.png)
+
+##### Summary
+
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/textline_detection_summary.png)
+
+<center>
+    F_8: testlines检测和分割结果
+</center>
+
+##### Referecne
+
+[1] Text-Line Extraction using a Convolution of Isotropic Gaussian Filter with a Set of Line Filters

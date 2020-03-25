@@ -1,0 +1,144 @@
+---
+layout:     post
+title:      "办公内网穿透"
+subtitle:   " \"内网穿透访问办公网资源，代理分流\""
+date:       2019-07-30 00:51:00
+author:     "HeShuai"
+header-img: "img/banner/FireWall-1.png"
+catalog: true
+tags:
+    - 瞎折腾
+
+---
+
+# 前言
+
+最近由于需要远程登陆访问公司的一些资源，日常挂着公司的VPN。但是公司的VPN每次连接都需要OA上的动态密码，而且连接公司内网后所有流量都经公司的网关，会带来隐私忧虑。另公司的出口带宽垃圾，不利于愉快学习。因此我需要一个解决方案能满足以下**需求**：
+
+> **1.** 随时随地无感连接公司内网，访问内网资源，包括邮箱、OA、平台和远程桌面等。拒绝OA动态密码验证。<br/>
+> **2.** 办公流量走公司内网，私人流量走正常渠道。<br/>
+> **3.** 顺带能帮家里的NAT宽带下的设备实现内网穿透，实现外网访问路由、电脑唤醒和ftp服务等。<br/>
+
+上述诉求可以通过简单的分流代理实现（我知道很多人还在混淆VPN和代理的区别）。代理需要一台代理服务器，而如果要访问公司内网资源，我就需要有一台在办公网下的服务器。公司我只有一台工作电脑，因此只能以它作为服务器。但是，由于办公电脑处于公司内网之下，没有公网IP可以进行直接通讯，因此内网穿透是首要之需。总而言之，我的关键需求变成了：
+
+> **1.** 帮助没有办公局域网防火墙之下的办公电脑进行**内网穿透**。
+>
+> **2.** 办公网中的**代理服务器**。
+>
+> **3.** **分流代理客户端**。
+
+理论上内网穿透和代理需要分别搭建两个服务器，好消息是著名的FRP内网穿透刚好支持代理，因此一个FRP服务器就可以同时满足穿透和代理的功能；而客户端的代理流量分流现成工具更多，客户端有proxifier, chrome插件则有switchy omega。总结，我的**解决方案**是这样的：
+
+> **1.** 借助**frp**实现公司内网和家里NAT穿透，同时进行流量代理。<br/>
+> **2.** 借助**omega**进行分流，OA相关走内网，国内流量直连，学术流量走出国门。<br/>
+
+# 介绍
+
+总所周知，在TCP/IP协议下，没有公网IP的两台设备是无法直接通讯的。要实现通讯，至少需要一方具有公网IP。在我们的应用中，公司和家里各有一台电脑，他们分别处于办公局域网和运营商的NAT局域网之下，均没有公网IP。为实现他们的通讯，我们需要一个具有公网IP的媒人，帮助两台子网主机传递流量。
+
+[Frp](https://github.com/fatedier/frp)就是通过在公网中架设一台具有公网IP的服务器、内网机器中运行客户端的形式实现内网穿透。frp支持多客户端，也即是一台frp服务器可以通过不同端口映射的方式，帮助众多的客户端实现内网穿透，具体应用包括外网访问内网中的web服务、ftp服务、NAS、设备管理、aria2远程下载、远程桌面和内网机器唤醒等。frp支持不同的操作系统，常见如windows和linux，甚至安卓也有软件实现。
+
+当你在家想访问你公司电脑或者资源，你可以借道frp服务端，具体的通讯链路如下：
+
+> **家里的你->公网中的frp服务端->公司内网中运行了frp客户端的电脑->公网frp服务端->家里的你**
+
+![](https://raw.githubusercontent.com/mightycatty/mightycatty.github.io/master/img/20190729224333.png)
+
+# 实操
+
+##### 需要：
+
+> 1. 一台具有公网IP的电脑，架设FRP服务端（如果你家里的宽带运营商给你的是公网IP，那一切好说。否则需要一台云服务器。另网上有一些免费的FRP服务器资源（不建议）。
+>    <br/>
+> 2. 你公司的一台电脑，最好是二十年不关机的那种喔，运行FRP客户端。<br/>
+> 3. 家里的电脑或者手机流量，用以测试。<br/>
+
+##### 步骤：
+
+###### **1. 服务端配置**
+
+用公共免费FRP服务器的忽略此步骤。
+
+1）跳转[Frp](https://github.com/fatedier/frp)下载对应设备的文件（云服务器一般都是Linux），解压<br/>
+2）配置frps.ini文件<br/>
+3）开机自启动[Linux开机启动配置](
+https://www.ayue.cc/%E5%BC%80%E5%8F%91%E7%9B%B8%E5%85%B3/ubuntu-16%E5%AE%89%E8%A3%85frp%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%B9%B6%E8%AE%BE%E7%BD%AE%E5%BC%80%E6%9C%BA%E8%87%AA%E5%90%AF%E7%9A%84%E6%96%B9%E6%B3%95.html), [windows开机启动配置](https://blog.csdn.net/chengg0769/article/details/80647406)<br/>
+4）防火墙端口配置<br/>
+如果你和我一样用的搬瓦工，默认所有端口都是开放的，否则需要手动设置，具体请google。（阿里云的服务器需要在阿里云平台上进行安全策略设置）<br/>
+5）运行frps -c frps.ini
+
+```
+#frps.ini示例
+[common]
+bind_port = 7000 # 服务器绑定端口，客户端通过该端口与服务器通信
+kcp_bind_port = 7000 # kcp是一种加速协议，具体google，用来加速你的7000端口。不管3721用就是了
+token = howdareyou # 你的frp客户端与服务端之间的通信token，
+dashboard_port = 7500 # 网页可视化的端口，通过你的公网IP:7500可以在网页上查看frp使用情况
+dashboard_user = your_user_name #可视化访问的账号密码
+dashboard_pwd = your_pwd
+```
+
+###### **2. 客户端配置**
+
+客户端运行于需要实现内网穿透的设备当中，最好是运行在openwrt路由器上，实现24h无感穿透。老毛子固件集成frp，可以实现子网内指定设备穿透。没有相关的路由的话则运行在长期不关机的电脑中。以下主要是办公电脑windows10的配置指引。
+
+1）跳转[Frp](https://github.com/fatedier/frp)下载对应设备的文件（windows），解压<br/>
+2）配置frpc.ini文件<br/>
+
+```
+ #frpc.ini示例
+[common] 
+server_addr = x.x.x.x #你的服务器公网IP
+server_port = 7000 #服务器中的bind_port
+protocol = kcp #kcp协议，需要服务器中配置
+token = howdareyou #通讯token
+tls_enable = true #加密
+
+[hy_socket5] # socket5代理，借此访问内网的web资源和设备
+type = tcp
+remote_port = 8010
+plugin = socks5
+use_encryption = true #加密
+
+[hy_http] # http代理，同socket5一样可代理访问内网资源，两者可只用其一
+type = tcp
+remote_port = 8011
+plugin = http_proxy
+use_encryption = true
+
+[remote-windows-hy] #3389是windows远程控制默认端口，实现远程桌面控制
+type = tcp
+local_ip = 127.0.0.1
+local_port = 3389
+remote_port = 5200
+use_encryption = true
+```
+
+3）开机自启动
+[windows开机启动配置](https://blog.csdn.net/chengg0769/article/details/80647406)<br/>
+4） 防火墙端口配置
+[windows端口配置](https://blog.csdn.net/yuhong_x/article/details/79456078)<br/>
+5）运行frpc.exe -c frpc.ini<br/>
+
+###### **3. chrome switch omega配置**
+
+switch omega主要是负责代理分流，根据你设置的规则，不同的流量走不同的代理或者渠道。这里可以实现海外站点走你的小鸡、OA走上面设置的frp socket5或者http代理、国内站点直连。因此你真正走公司的流量只有办公那部分流量，不怕被网管log你私人流量。
+
+1) google chrome play搜索switch omega
+
+2) 新建一个代理情景模式，配置为你上面配置的frp socket5代理
+
+![](https://raw.githubusercontent.com/mightycatty/mightycatty.github.io/master/img/20190730002722.png)
+
+3) 新建一个auto switch，配置你的规则，让相关流量走其该走的路
+![](https://raw.githubusercontent.com/mightycatty/mightycatty.github.io/master/img/20190730003014.png)
+
+# 测试
+
+众所周知Youtube是一个测速网站，以下是公司代理和科学代理的区别：
+
+**TODO**
+
+# 后话
+
+作为内网穿透工具，FRP上手快捷简单，如果服务器在国内的话也比较稳定。但是国内服务器带宽很小，如果使用海外服务器则有访问延时和高丢包的问题。总而言之，如果只需要轻量级的网络访问，FRP足够，如果需要穿透访问FTP等文件服务器，FRP目前来说个人感觉还不是最好的工具。
