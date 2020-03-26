@@ -1,6 +1,28 @@
-# Plane Detection & Construction
+---
+layout:     post
+title:      "PaperReading-平面检测"
+subtitle:   " \"PaperReading-平面检测\""
+date:       2020-03-24 22:02:00
+author:     "HeShuai"
+header-img: "img/banner/post-default.jpg"
+catalog: true
+tags:
+    - 推理
+---
+<head>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            inlineMath: [['$','$']]
+            }
+        });
+    </script>
+</head>
 
-[TOC]
+
+# Plane Detection & Construction
 
 平面模型：
 $$
