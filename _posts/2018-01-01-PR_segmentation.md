@@ -100,3 +100,30 @@ tags:
 作者argue naive的upsample是不行的，可以利用高层次语义特征对低层次特征进行channel attention。疑问是high-level features与low-level features不存在直接的信息交流的情况下是如何产生attention vector的。
 ![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20200428150758.png)
 ![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20200428151042.png)
+## 7.(2019)[FastFCN: Rethinking Dilated Convolution in the Backbone for Semantic Segmentation]
+设计了一个联合上采用模块加强FCN的特征，可以得到dilatedCNN同等的效果但是快数倍。问题是看起来结构也很复杂, 是否适合端上.
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20200516151751.png)
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20200516151945.png)
+## 8.(2019)[https://arxiv.org/pdf/1910.08711.pdf]
+SSL loss, mask的structure的相似度. 另外调的参数有点多.
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20200521165116.png)
+
+## 9. (2018) Learning to Predict Crisp Boundarie
+
+提出Dice Loss来应对boudary这种极端不平衡的情况, Loss维DICE coefficient的倒数, 描述的是两个集合的相似程度, 当两个集合完全一致时, 为1. 该Loss是一种全局性的考虑, 结合CE等pixel level的loss可以获得一些不错的结果. 
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20200522164938.png)
+
+## 10.(2020)[Joint Semantic Segmentation and Boundary Detection using Iterative Pyramid Contexts](https://arxiv.org/pdf/2004.07684.pdf)
+
+模型同时估计mask和semantic boundary，通过loss同时束缚mask和boundary来达到提升mask的目的。
+
+![](https://raw.githubusercontent.com/mightycatty/image_bed/master/images/20200526151754.png)
+
+## 11.(2018)ExFuse: Enhancing Feature Fusion for Semantic Segmentation
+文章主要探索如何更好地融合分割任务中的高低层次语义特征
+
+## 12.(2019) [Decoders Matter for Semantic Segmentation: Data-Dependent Decoding Enables Flexible Feature Aggregation](https://arxiv.org/pdf/1903.02120.pdf)
+作者提出一种可以实现任意上采样倍数且轻量级的decoder以取代DLV3+的decoder，大体思想就是depth to spatial，类似subpixel的思想。
+模仿实现了一下，发现得到的边缘圆润度很差，棋盘效应更加严重。在原论文和githu的一份pytorch中看到相似的可视化结果。
+
+## 13.(2020)[]
